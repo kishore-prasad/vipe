@@ -27,9 +27,12 @@ output:
   skip_exists: false
 
   # Save artifacts and a info file
-  save_artifacts: false
+  save_artifacts: true
+
+  # Save reconstruction from SLAM
+  save_slam_map: true
 
   # Visualization videos to BASE_PATH/vipe/xxx.mp4
   save_viz: true
   viz_downsample: 2
-  viz_attributes: [["rgb"], ["pcd"]]
+  viz_attributes: [["rgb", "instance"], ["depth", "pcd"]]
