@@ -18,7 +18,7 @@ slam:
   map_filter_thresh: 0.01
 
 post:
-  depth_align_model: null
+  depth_align_model: unik3d
 
 # Output configs
 output:
