@@ -237,7 +237,10 @@ def convert_vipe_to_colmap(artifact: ArtifactPath, output_path: Path, depth_step
     )
 
     # Verify required files exist
-    required_files = [artifact.rgb_path, artifact.pose_path, artifact.intrinsics_path, artifact.depth_path]
+    required_files = [artifact.rgb_path, artifact.pose_path, artifact.intrinsics_path]
+    # Depth is only required when not using the SLAM map
+    if not use_slam_map:
+        required_files.append(artifact.depth_path)
     for file_path in required_files:
         if not file_path.exists():
             raise FileNotFoundError(f"Required file not found: {file_path}")
