@@ -8,8 +8,8 @@ virtual:
   fovx: 100.0
   fovy: 100.0
   num_views: 4
-  top: false
-  bottom: true
+  top: true
+  bottom: false
 
 slam:
   buffer: 256
