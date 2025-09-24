@@ -14,7 +14,7 @@ virtual:
 slam:
   buffer: 256
   optimize_intrinsics: false
-  keyframe_depth: metric3d-small
+  keyframe_depth: null
   map_filter_thresh: 0.01
 
 post:
@@ -35,4 +35,4 @@ output:
   # Visualization videos to BASE_PATH/vipe/xxx.mp4
   save_viz: true
   viz_downsample: 2
-  viz_attributes: [["rgb", "instance"], ["depth", "pcd"]]
+  viz_attributes: [["rgb"], ["pcd"]]
