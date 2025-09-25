@@ -336,7 +336,7 @@ class CachedVideoStream(VideoStream):
 
     DISPLAY_THRESH = 20
 
-    def __init__(self, video_stream: VideoStream, desc: str = "Caching") -> None:
+    def __init__(self, video_stream: VideoStream, desc: str = "Caching", streaming: bool = False) -> None:
         self._frame_size = video_stream.frame_size()
         self._fps = video_stream.fps()
         self._name = video_stream.name()
@@ -345,6 +345,8 @@ class CachedVideoStream(VideoStream):
         self.iterator = iter(video_stream)
         self.data: list[VideoFrame] = []
         self.desc = desc
+        self.streaming = streaming
+        self._start_offset = 0  # number of frames evicted from front
 
     def fps(self) -> float:
         return self._fps
@@ -360,9 +362,12 @@ class CachedVideoStream(VideoStream):
 
     def __getitem__(self, index) -> VideoFrame:
         assert index < len(self)
-        n_iters_needed = index - len(self.data) + 1
+        # Translate absolute index to local list index
+        local_index = index - self._start_offset
+        n_iters_needed = local_index - len(self.data) + 1
         if n_iters_needed <= 0:
-            return self.data[index].cuda()
+            frame = self.data[local_index]
+            return frame.cuda()
 
         itr = range(n_iters_needed)
         if n_iters_needed > self.DISPLAY_THRESH:
@@ -387,7 +392,16 @@ class CachedVideoStream(VideoStream):
             self.iterator = None
             torch.cuda.empty_cache()
 
-        return self.data[index].cuda()
+        # Evict frames before current index in streaming mode to bound RAM
+        if self.streaming:
+            evict_upto = max(0, local_index)  # keep current and later
+            if evict_upto > 0:
+                del self.data[:evict_upto]
+                self._start_offset += evict_upto
+                local_index = index - self._start_offset
+
+        frame = self.data[local_index]
+        return frame.cuda()
 
     def __iter__(self):
         for idx in range(len(self)):
@@ -537,7 +551,7 @@ class ProcessedVideoStream(VideoStream):
         return self.stream.name()
 
     def cache(self, desc: str = "Caching", online: bool = False) -> CachedVideoStream:
-        vs = CachedVideoStream(self, desc)
+        vs = CachedVideoStream(self, desc, streaming=online)
 
         # If not online, we trigger __getitem__ of the last element to force storing all frames.
         if not online:

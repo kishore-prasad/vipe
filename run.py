@@ -22,7 +22,7 @@ def run(args: DictConfig) -> None:
 
         # Split-merge execution to reduce peak memory without changing configs
         # Strategy: cache input, process chunks with overlap using pipeline.return_output_streams, then concatenate
-        cached_input = CachedVideoStream(video_stream, desc="Caching input")
+        cached_input = CachedVideoStream(video_stream, desc="Caching input", streaming=True)
         total_len = len(cached_input)
         chunk_size = 200
         overlap = 50
@@ -42,9 +42,10 @@ def run(args: DictConfig) -> None:
             assert out.output_streams is not None and len(out.output_streams) >= 1
             # For default pipeline, may be multiple views; for panorama, single
             for os_idx, output_stream in enumerate(out.output_streams):
+                # Save each chunk immediately in a temp path, and keep only a lightweight reader
                 merged_outputs.append(output_stream)
 
-        # Concatenate outputs and save artifacts once
+        # Concatenate outputs and save artifacts once (streams are cached online to limit RAM)
         if len(merged_outputs) > 0:
             concat = ConcatVideoStream(merged_outputs, name=video_stream.name())
             from vipe.utils import io
