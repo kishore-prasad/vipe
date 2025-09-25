@@ -12,7 +12,8 @@ virtual:
   bottom: false
 
 slam:
-  buffer: 256
+  # buffer: 256
+  buffer: 32
   optimize_intrinsics: false
   keyframe_depth: null
   map_filter_thresh: 0.01
