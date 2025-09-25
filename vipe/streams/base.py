@@ -19,7 +19,7 @@ import logging
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Iterable, Iterator, Protocol
+from typing import Any, Iterable, Iterator, Protocol, List
 
 import torch
 
@@ -130,7 +130,8 @@ class VideoFrame:
             raise ValueError(f"Attribute {attribute} is not available in the frame.")
 
     def cpu(self) -> "VideoFrame":
-        map_cpu = lambda x: x.cpu() if x is not None else None
+        def map_cpu(x):
+            return x.cpu() if x is not None else None
 
         return VideoFrame(
             raw_frame_idx=self.raw_frame_idx,
@@ -146,7 +147,8 @@ class VideoFrame:
         )
 
     def cuda(self) -> "VideoFrame":
-        map_cuda = lambda x: x.cuda() if x is not None else None
+        def map_cuda(x):
+            return x.cuda() if x is not None else None
 
         return VideoFrame(
             raw_frame_idx=self.raw_frame_idx,
@@ -397,6 +399,76 @@ class CachedVideoStream(VideoStream):
 
     def attributes(self) -> set[FrameAttribute]:
         return self._attributes
+
+
+class SliceVideoStream(VideoStream):
+    """
+    A lightweight view over a CachedVideoStream for a contiguous subrange of frames [start, end).
+    Does not copy frames; indexes into the cached source stream.
+    """
+
+    def __init__(self, source: CachedVideoStream, start: int, end: int, name_suffix: str | None = None) -> None:
+        assert 0 <= start <= end <= len(source)
+        self.source = source
+        self.start = start
+        self.end = end
+        self._name = source.name() if name_suffix is None else f"{source.name()}_{name_suffix}"
+
+    def frame_size(self) -> tuple[int, int]:
+        return self.source.frame_size()
+
+    def fps(self) -> float:
+        return self.source.fps()
+
+    def name(self) -> str:
+        return self._name
+
+    def __len__(self) -> int:
+        return self.end - self.start
+
+    def __iter__(self):
+        for idx in range(self.start, self.end):
+            yield self.source[idx]
+
+    def attributes(self) -> set[FrameAttribute]:
+        return self.source.attributes()
+
+
+class ConcatVideoStream(VideoStream):
+    """
+    Concatenate multiple VideoStreams of the same format back-to-back.
+    """
+
+    def __init__(self, streams: List[VideoStream], name: str) -> None:
+        assert len(streams) > 0
+        self.streams = streams
+        self._name = name
+        # Precompute cumulative lengths
+        self.cum_lengths: list[int] = []
+        total = 0
+        for s in streams:
+            total += len(s)
+            self.cum_lengths.append(total)
+
+    def frame_size(self) -> tuple[int, int]:
+        return self.streams[0].frame_size()
+
+    def fps(self) -> float:
+        return self.streams[0].fps()
+
+    def name(self) -> str:
+        return self._name
+
+    def __len__(self) -> int:
+        return self.cum_lengths[-1]
+
+    def __iter__(self):
+        for s in self.streams:
+            for f in s:
+                yield f
+
+    def attributes(self) -> set[FrameAttribute]:
+        return self.streams[0].attributes()
 
 
 class StreamProcessor(Protocol):

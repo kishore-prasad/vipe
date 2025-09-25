@@ -268,6 +268,11 @@ class PanoramaAnnotationPipeline(Pipeline):
             )
         )
 
+        # Early return support when caller wants the processed output stream for split/merge
+        if self.return_output_streams:
+            annotate_output.output_streams = [output_stream]
+            return annotate_output
+
         if self.out_cfg.save_artifacts:
             io.save_artifacts(artifact_path, output_stream)
 

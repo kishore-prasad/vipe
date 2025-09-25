@@ -124,6 +124,11 @@ class DefaultAnnotationPipeline(Pipeline):
             for view_idx, slam_stream in enumerate(slam_streams)
         ]
 
+        # If caller wants output_streams, return them without saving artifacts
+        if self.return_output_streams:
+            annotate_output.output_streams = output_streams
+            return annotate_output
+
         # Dumping artifacts for all views in the streams
         for output_stream, artifact_path in zip(output_streams, artifact_paths):
             artifact_path.meta_info_path.parent.mkdir(exist_ok=True, parents=True)
@@ -145,8 +150,5 @@ class DefaultAnnotationPipeline(Pipeline):
             if self.out_cfg.save_slam_map and slam_output.slam_map is not None:
                 logger.info(f"Saving SLAM map to {artifact_path.slam_map_path}")
                 slam_output.slam_map.save(artifact_path.slam_map_path)
-
-        if self.return_output_streams:
-            annotate_output.output_streams = output_streams
 
         return annotate_output

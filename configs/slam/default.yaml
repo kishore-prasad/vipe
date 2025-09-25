@@ -31,8 +31,8 @@ optimize_intrinsics: ???
 optimize_rig_rotation: false
 # Whether add reproj factors for cross-views
 cross_view: true
-cross_view_idx: null  # null means default
-adaptive_cross_view: false  # Backend only, recompute cross_view_idx
+cross_view_idx: null # null means default
+adaptive_cross_view: false # Backend only, recompute cross_view_idx
 # Chunk size of the infill
 infill_chunk_size: 16
 # Whether or not to infill dense disparity
