@@ -1,5 +1,6 @@
 import hydra
 from omegaconf import DictConfig
+from pathlib import Path
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="default")
@@ -49,7 +50,8 @@ def run(args: DictConfig) -> None:
         if len(merged_outputs) > 0:
             concat = ConcatVideoStream(merged_outputs, name=video_stream.name())
             from vipe.utils import io
-            artifact_path = io.ArtifactPath(args.pipeline.output.path, video_stream.name())
+            out_base = Path(args.pipeline.output.path)
+            artifact_path = io.ArtifactPath(out_base, video_stream.name())
             artifact_path.meta_info_path.parent.mkdir(exist_ok=True, parents=True)
             if args.pipeline.output.save_artifacts:
                 io.save_artifacts(artifact_path, concat)
